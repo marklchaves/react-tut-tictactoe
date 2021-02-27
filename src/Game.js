@@ -1,69 +1,22 @@
-function Square(props) {
-  return (
-    <button className="square" onClick={props.onClick}>
-      {/* Display X or O in the square. */}
-      {props.value}
-    </button>
-  );
-}
+import React from "react";
+import ReactDOM from "react-dom";
+import "./styles.css";
 
-function Reset(props) {
-  return (
-    <button className="reset" onClick={props.onClick}>
-      Reset
-    </button>
-  )
-}
+import { Reset, Square } from "./utils";
 
 class Board extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = this.resetBoard();
-  }
-
-  resetBoard() {
-    return {
-      squares: Array(9).fill(null),
-      xIsNext: true
-    };
-  }
-  
-  handleReset() {
-    this.setState(this.resetBoard());
-  }
-
-  handleClick(i) {
-    const squares = this.state.squares.slice();
-    // If game over or square taken, then bail.
-    if (calculateWinner(squares) || squares[i]) return;
-    squares[i] = this.state.xIsNext ? "X" : "O";
-    this.setState({
-      squares: squares,
-      xIsNext: !this.state.xIsNext
-    });
-  }
-
   renderSquare(i) {
     return (
       <Square
-        value={this.state.squares[i]}
-        onClick={() => this.handleClick(i)}
+        value={this.props.squares[i]}
+        onClick={() => this.props.onClick(i)}
       />
     );
   }
 
   render() {
-    let status;
-    const winner = calculateWinner(this.state.squares);
-    if (winner) {
-      status = winner + " is the Winner!";
-    } else {
-      status = (this.state.xIsNext ? "X" : "O") + "'s Move";
-    }
-
     return (
       <div className="game-table">
-        <div className="status">{status}</div>
         <div className="board-row">
           {this.renderSquare(0)}
           {this.renderSquare(1)}
@@ -79,26 +32,69 @@ class Board extends React.Component {
           {this.renderSquare(7)}
           {this.renderSquare(8)}
         </div>
-        <div>
-          <Reset
-            onClick={() => this.handleReset()}
-          />
-        </div>
       </div>
     );
   }
 }
 
-class Game extends React.Component {
+export default class Game extends React.Component {
+  state = {
+    history: [this.resetBoard()]
+  }
+
+  resetBoard() {
+    return {
+      squares: Array(9).fill(null),
+      xIsNext: true
+    };
+  }
+
+  handleReset(i) {
+    this.setState({history: [this.resetBoard()]});
+  }
+
+  handleClick(i) {
+    const history = this.state.history;
+    const current = history[history.length - 1];
+    const squares = current.squares.slice();
+
+    // If game over or square taken, then bail.
+    if (calculateWinner(squares) || squares[i]) return;
+    squares[i] = this.state.xIsNext ? "X" : "O";
+    this.setState({
+      history: history.concat([{
+        squares: squares,
+      }]),
+      xIsNext: !this.state.xIsNext
+    });
+  }
+
   render() {
+    const history = this.state.history;
+    const current = history[history.length - 1];
+
+    let status;
+    const winner = calculateWinner(current.squares);
+    if (winner) {
+      status = winner + " is the Winner!";
+    } else {
+      status = (this.state.xIsNext ? "X" : "O") + "'s Move";
+    }
+
     return (
       <div className="game">
         <div className="game-board">
-          <Board />
+          <Board
+            squares={current.squares}
+            onClick={(i) => this.handleClick(i)} 
+          />
         </div>
         <div className="game-info">
-          <div>{/* status */}</div>
+          <div className="status">{status}</div>
           <ol>{/* TODO */}</ol>
+        </div>
+        <div>
+          <Reset onClick={() => this.handleReset()} />
         </div>
       </div>
     );
